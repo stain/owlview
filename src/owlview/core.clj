@@ -4,7 +4,7 @@
             [hiccup.core :refer [html]]
             [hiccup.page :refer [html4 html5 xhtml include-css include-js]]
             [ring.adapter.jetty :refer [run-jetty]]
-            [compojure.core :refer [defroutes ANY GET POST PUT DELETE]]))
+            [compojure.core :refer [defroutes ANY]]))
 
 (defn xhtml? [ctx]
 ;  (= "application/xhtml+xml";
@@ -12,8 +12,12 @@
 ;    (get-in ctx [:representation :media-type]))
     false)
 
+(def known-ontologies {})
+
 (defroutes app
-  (ANY "/" [] (resource :available-media-types ["text/html" "application/xhtml+xml"]
+  (ANY "/" [] (resource
+    :available-media-types ["text/html" "application/xhtml+xml"]
+
                         :handle-ok (fn [ctx] (html5 {:xml? (xhtml? ctx)}
                             [:head
                               [:title "owlview"]
@@ -40,7 +44,16 @@
                                 "Stian Soiland-Reyes"]]
                               (include-js "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.js"
                                           "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.js")
-                          ])))))
+                          ]))))
+;  (ANY "/ont/{:url}" [] (resource))    
+  (ANY "/ont/" [] (resource
+      :available-media-types ["text/html"]
+      :allowed-methods [:post]
+      :post! (fn [ctx] (str "OK. " ctx))
+      :post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
+    ))
+)
+
 
 (def handler
   (-> app
