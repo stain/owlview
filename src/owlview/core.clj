@@ -22,14 +22,22 @@
                                 )]
                             [:body
                              [:div {:class "container"}
-                              [:h1 "Hiccup"]
-                              [:div {:class "container theme-showcase" :role "main"}
-                                  "Hello there!"
-                                  [:p [:a {:href "#"
-                                       :class "btn btn-primary btn-lg"
-                                       :role "main"} "Do it"]]
-                                ]
-                              [:p "Welcome to hiccup"]]
+                              [:h1 "owlview"]
+                              [:div {:class "jumbotron"}
+                                  "Visualize an OWL/RDFS ontology:"
+                                  [:form {:role "form" :method "POST" :action "ont/"}
+                                     [:p [:input {:name "url" :type "url" :class "form-control" :placeholder "http://purl.org/pav/" :autofocus :autofocus}]]
+                                     "or:"
+                                     [:p [:input {:name "file" :type "file" :class "form-control"
+                                                    :accept "application/rdf+xml,text/turtle,application/owl+xml,.owl,.rdf,.ttl,.owx"}]]
+                                     [:p [:input {:type "submit" :class "btn btn-primary btn-lg" :value "Visualize"}]]
+                                  ]
+                              ]]
+                              [:address {:class "footer"}
+                                [:a {:href "https://github.com/stain/owlview"} "owlview"]
+                                " by "
+                                [:a {:href "http://orcid.org/0000-0001-9842-9718"}
+                                "Stian Soiland-Reyes"]]
                               (include-js "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.js"
                                           "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.js")
                           ])))))
