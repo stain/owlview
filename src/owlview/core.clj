@@ -3,7 +3,9 @@
             [liberator.dev :refer [wrap-trace]]
             [ring.middleware.params :refer [wrap-params]]
             [hiccup.page :refer [html5 include-css include-js]]
+            [hiccup.util :refer [escape-html]]
             [ring.adapter.jetty :refer [run-jetty]]
+            [clojure.stacktrace :refer [print-stack-trace]]
             [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
                                 owl-manager with-owl-manager
                                 object-properties data-properties annotation-properties
@@ -28,13 +30,13 @@
 (defn html [ctx title & body]
               (html5 {:xml? (xhtml? ctx)}
                   [:head
-                    [:title title]
+                    [:title (escape-html title)]
                     (include-css "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.css"
                       "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.css"
                       )]
                   [:body
                    [:div {:class "container"}
-                    [:h1 title]
+                    [:h1 (escape-html title)]
                     body
                     [:address {:class "footer"}
                       [:a {:href "https://github.com/stain/owlview"} "owlview"]
@@ -69,11 +71,16 @@
     ))
   (ANY "/ont/*" [& {url :*}] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
-    :handle-exception (fn [{err :exception :as ctx}] (html ctx (str "Failed to load ontology " url) (or (.getMessage err) (str err))))
+    :handle-exception (fn [{err :exception :as ctx}]
+      (print-stack-trace err)
+      (html ctx (str "Failed to load ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
+    )
     :handle-ok (fn [ctx]
         (with-owl
           (let [ontology (get-ontology url)]
-            (html ctx (str "Ontology " url) [:div "OK that is, " url])
+            (html ctx (str "Ontology " (escape-html url)) [:div "OK that is, " (str ontology)]
+                                            [:ul
+                                              (map #([:li str (escape-html %)]) (classes ontology))])
         )))))
 )
 
