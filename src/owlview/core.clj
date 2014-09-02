@@ -1,5 +1,6 @@
 (ns owlview.core
   (:require [liberator.core :refer [resource defresource]]
+            [liberator.dev :refer [wrap-trace]]
             [ring.middleware.params :refer [wrap-params]]
             [hiccup.core :refer [html]]
             [hiccup.page :refer [html4 html5 xhtml include-css include-js]]
@@ -69,4 +70,5 @@
 
 (def handler
   (-> app
+      (wrap-trace :header :ui)
       (wrap-params)))
