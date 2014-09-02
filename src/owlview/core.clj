@@ -45,7 +45,12 @@
                               (include-js "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.js"
                                           "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.js")
                           ]))))
-;  (ANY "/ont/{:url}" [] (resource))    
+  (ANY "/ont/*" [& {url :*}] (resource
+    :available-media-types ["text/html" "application/xhtml+xml"]
+    :handle-ok (fn [ctx]
+        (html5 {:xml? true} [:body [:div "OK then, " url]])
+      )
+    ))
   (ANY "/ont/" [] (resource
       :available-media-types ["text/html"]
       :allowed-methods [:post]
