@@ -11,7 +11,7 @@
   :ring {:handler owlview.core/handler}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [liberator "0.12.1"]
-                 [clj-owlapi "0.3.0"]
+                 [clj-owlapi "0.3.1-SNAPSHOT"]
                  [hiccup "1.0.5"]
                  [org.slf4j/slf4j-jdk14 "1.7.7"]
   ])

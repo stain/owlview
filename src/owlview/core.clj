@@ -6,6 +6,7 @@
             [hiccup.page :refer [html4 html5 xhtml include-css include-js]]
             [ring.adapter.jetty :refer [run-jetty]]
             [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
+                                owl-manager with-owl-manager
                                 object-properties data-properties annotation-properties
                                 ranges-of-property annotations]]
             [compojure.core :refer [defroutes ANY]]))
@@ -16,11 +17,14 @@
 ;    (get-in ctx [:representation :media-type]))
     false)
 
-(def known-ontologies {})
+; Map from uri to owl-managers
+(def known-ontologies (atom {}))
 
 (defn get-ontology [uri]
-  ;; TODO: Store in loaded-ontologies?
-  (load-ontology uri))
+  (let [owl-manager (or (get @known-ontologies uri)
+                        (get (swap! known-ontologies assoc uri (owl-manager)) uri))]
+    (with-owl-manager owl-manager
+      (load-ontology uri))))
 
 (defroutes app
   (ANY "/" [] (resource
@@ -55,20 +59,22 @@
                           ]))))
   (ANY "/ont/" [] (resource
       :available-media-types ["text/html"]
-      :allowed-methods [:post]
+      :allowed-methods [:post :get]
+      :handle-ok (fn [ctx] (html5 [:body "Known:" (keys @known-ontologies) "OK?"]))
       :post! (fn [ctx] (str "OK. " ctx))
       :post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
     ))
   (ANY "/ont/*" [& {url :*}] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
+    :handle-exception (fn [{e :exception}] (throw e))
     :handle-ok (fn [ctx]
-        (let [ontology (get-ontology url)]
+        (with-owl
+          (let [ontology (get-ontology url)]
           (html5 {:xml? true} [:body [:div "OK then, " url]])
-        ))))
+        )))))
 )
 
 
 (def handler
   (-> app
-      (wrap-trace :header :ui)
       (wrap-params)))
