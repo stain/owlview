@@ -78,10 +78,20 @@
     :handle-ok (fn [ctx]
         (with-owl
           (let [ontology (get-ontology url)]
-            (html ctx (str "Ontology " (escape-html url)) [:div "OK that is, " (str ontology)]
+            (html ctx (str "Ontology " (escape-html url)) [:div "OK that is: " (escape-html ontology)
+                                            [:h2 "Classes"]
                                             [:ul
-                                              (map #([:li str (escape-html %)]) (classes ontology))])
-        )))))
+                                              (map (fn [x] [:li (escape-html x)]) (classes ontology)
+                                              )]
+                                            [:h2 "Object properties"]
+                                            [:ul
+                                              (map (fn [x] [:li (escape-html x)]) (object-properties ontology)
+                                              )]
+                                            [:h2 "Data properties"]
+                                            [:ul
+                                              (map (fn [x] [:li (escape-html x)]) (data-properties ontology)
+                                              )]
+        ]))))))
 )
 
 
