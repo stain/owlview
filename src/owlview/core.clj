@@ -4,6 +4,9 @@
             [hiccup.core :refer [html]]
             [hiccup.page :refer [html4 html5 xhtml include-css include-js]]
             [ring.adapter.jetty :refer [run-jetty]]
+            [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
+                                object-properties data-properties annotation-properties
+                                ranges-of-property annotations]]
             [compojure.core :refer [defroutes ANY]]))
 
 (defn xhtml? [ctx]
@@ -13,6 +16,10 @@
     false)
 
 (def known-ontologies {})
+
+(defn get-ontology [uri]
+  ;; TODO: Store in loaded-ontologies?
+  (load-ontology uri))
 
 (defroutes app
   (ANY "/" [] (resource
@@ -45,18 +52,18 @@
                               (include-js "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.js"
                                           "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.js")
                           ]))))
-  (ANY "/ont/*" [& {url :*}] (resource
-    :available-media-types ["text/html" "application/xhtml+xml"]
-    :handle-ok (fn [ctx]
-        (html5 {:xml? true} [:body [:div "OK then, " url]])
-      )
-    ))
   (ANY "/ont/" [] (resource
       :available-media-types ["text/html"]
       :allowed-methods [:post]
       :post! (fn [ctx] (str "OK. " ctx))
       :post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
     ))
+  (ANY "/ont/*" [& {url :*}] (resource
+    :available-media-types ["text/html" "application/xhtml+xml"]
+    :handle-ok (fn [ctx]
+        (let [ontology (get-ontology url)]
+          (html5 {:xml? true} [:body [:div "OK then, " url]])
+        ))))
 )
 
 
