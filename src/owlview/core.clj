@@ -67,7 +67,7 @@
 
 (defn show-item [item]
   [:a {:href (str "#" (item-id item))} (label-for-item item)])
-
+/
 (defn sorted-items [items]
   (sort-by #(.getIRI %) items))
 
@@ -93,16 +93,51 @@
                                                     :accept "application/rdf+xml,text/turtle,application/owl+xml,.owl,.rdf,.ttl,.owx"}]]
                                      [:p [:input {:type "submit" :class "btn btn-primary btn-lg" :value "Visualize"}]]
                                   ]
+                              [:p "Alternatively, view any of the " [:a {:href "ont"} "known ontologies" ] "."]
                               ]
                           ))))
   (ANY "/ont" [] (resource
       :available-media-types ["text/html" "application/xhtml+xml"]
       :allowed-methods [:post :get]
-      :handle-ok (fn [ctx] (html ctx "owlview: Known ontologies" ["Known:" (keys @known-ontologies) "OK?"]))
-      :post! (fn [ctx] (str "OK. " ctx))
+      :handle-exception (fn [{err :exception :as ctx}]
+        (print-stack-trace err)
+        (html ctx (str "Failed to load ontology") [:pre (escape-html (or (.getMessage err) (str err)))])
+      )
+      :handle-ok (fn [ctx] (html ctx "owlview: Known ontologies"
+        [:div {:class :jumbotron}
+          [:p "Namespaces:"]
+          [:ul (map
+                #(vector :li [:a {:href (str "ont/" (escape-html %))}  (escape-html %)])
+                (sort (keys @known-ontologies)))]
+          [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
+      ))
+      :post! (fn [{ {params :params :as request}
+                    :request :as ctx}]
+                (println params)
+                (if-let [file (get params "file")]
+                  (let [body (request :body)]
+                    (println body)))
+                ; else.. do the url thing
+                ctx
+                )
+
+      ;;
+;   {:request {:ssl-client-cert nil, :remote-addr 127.0.0.1, :params {file pav.owl, url }, :route-params {},
+;     :headers {host localhost:3000, user-agent Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0, content-type application/x-www-form-urlencoded, content-length 17,
+;       referer http://localhost:3000/, connection keep-alive, accept text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8, accept-language en-gb,en;q=0.5, accept-encoding gzip, deflate, cache-control max-age=0},
+;       :server-port 3000, :content-length 17, :form-params {file pav.owl, url }, :query-params {}, :content-type application/x-www-form-urlencoded, :character-encoding nil,
+;          :uri /ont, :server-name localhost, :query-string nil,
+;         :body #<HttpInput org.eclipse.jetty.server.HttpInput@469c3554>, :scheme :http,
+;
+;          :request-method :post},
+;          :resource {:existed? #<core$constantly$fn__4085 clojure.core$constantly$fn__4085@22a41ee1>, :conflict? #<core$constantly$fn__4085 clojure.core$constantly$fn__4085@44e7578b>,
+;           ;; ;;;...
+;              :representation {:encoding identity, :media-type application/xhtml+xml}}
+      ;;
+
       :post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
     ))
-  (ANY "/ont/*" [& {url :*}] (resource
+  (ANY "/ont/*" [& {url :* }] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
     :handle-exception (fn [{err :exception :as ctx}]
       (print-stack-trace err)
@@ -112,7 +147,7 @@
         (with-owl-manager (owl-manager-for url)
           (binding [*ontology* (get-ontology url)]
             (html ctx (str "Ontology " (escape-html url))
-                        ;[:div "Ontology: " (escape-html *ontology*)]
+                       ;[:div "Ontology: " (escape-html *ontology*)]
                         [:div [:h2 "Content"] [:ol
                                             [:li [:a {:href "#Classes"} "Classes"]
                                               (list-items (classes *ontology*))]
