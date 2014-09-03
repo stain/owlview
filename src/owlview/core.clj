@@ -21,11 +21,12 @@
 ; Map from uri to owl-managers
 (def known-ontologies (atom {}))
 
+(defn owl-manager-for [uri]
+  (or (get @known-ontologies uri)
+      (get (swap! known-ontologies assoc uri (owl-manager)) uri)))
+
 (defn get-ontology [uri]
-  (let [owl-manager (or (get @known-ontologies uri)
-                        (get (swap! known-ontologies assoc uri (owl-manager)) uri))]
-    (with-owl-manager owl-manager
-      (load-ontology uri))))
+  (load-ontology uri))
 
 (defn html [ctx title & body]
               (html5 {:xml? (xhtml? ctx)}
@@ -72,6 +73,9 @@
 (defn show-item [item]
   [:a {:href (str "#" (item-id item))} (label-for-item item)])
 
+(defn sorted-items [items]
+  (sort-by #(.getIRI %) items))
+
 (defn list-items [items]
   [:ol (map (fn [item] [:li (show-item item)]) (sorted-items items))])
 
@@ -80,8 +84,6 @@
     [:h3 {:id (item-id item)} (label-for-item item)])
     (sorted-items items))])
 
-(defn sorted-items [items]
-  (sort-by #(.getIRI %) items))
 
 (defroutes app
   (ANY "/" [] (resource
@@ -112,7 +114,7 @@
       (html ctx (str "Failed to load ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
     )
     :handle-ok (fn [ctx]
-        (with-owl
+        (with-owl-manager (owl-manager-for url)
           (binding [*ontology* (get-ontology url)]
             (html ctx (str "Ontology " (escape-html url))
                         ;[:div "Ontology: " (escape-html *ontology*)]
