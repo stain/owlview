@@ -7,7 +7,7 @@
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.stacktrace :refer [print-stack-trace]]
             [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
-                                owl-manager with-owl-manager
+                                owl-manager with-owl-manager prefixes
                                 object-properties data-properties annotation-properties
                                 ranges-of-property annotations]]
             [compojure.core :refer [defroutes ANY]]))
@@ -47,8 +47,24 @@
                                 "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.js")
                   ]]))
 
+(def ^:dynamic *ontology* nil)
+
+(defn prefix-for [iri]
+ (if-let [prefix (get-in (prefixes *ontology*) (.getNamespace iri))]
+   (str prefix ":") (str (.getNamespace iri))))
+
+;(if (:prefix *options*)
+;  (if (:prefix *options*) (str (:prefix *options*) ":") "")
+;  )
+
+(defn name-for-iri [iri]
+  (str (prefix-for iri) (.getFragment iri)))
+
+(defn name-for-named [named]
+  (name-for-iri (.getIRI named)))
+
 (defn label-for-item [item]
-  (escape-html item))
+  (escape-html (name-for-named item)))
 
 (defn item-id [item]
   (escape-html (.getIRI item)))
@@ -57,12 +73,15 @@
   [:a {:href (str "#" (item-id item))} (label-for-item item)])
 
 (defn list-items [items]
-  [:ol (map (fn [item] [:li (show-item item)]) items)])
+  [:ol (map (fn [item] [:li (show-item item)]) (sorted-items items))])
 
 (defn expand-items [items]
   [:div (map (fn [item]
     [:h3 {:id (item-id item)} (label-for-item item)])
-    items)])
+    (sorted-items items))])
+
+(defn sorted-items [items]
+  (sort-by #(.getIRI %) items))
 
 (defroutes app
   (ANY "/" [] (resource
@@ -94,19 +113,26 @@
     )
     :handle-ok (fn [ctx]
         (with-owl
-          (let [ontology (get-ontology url)]
+          (binding [*ontology* (get-ontology url)]
             (html ctx (str "Ontology " (escape-html url))
-                        ;[:div "Ontology: " (escape-html ontology)]
+                        ;[:div "Ontology: " (escape-html *ontology*)]
                         [:div [:h2 "Content"] [:ol
                                             [:li [:a {:href "#Classes"} "Classes"]
-                                              (list-items (classes ontology))]
-                                            [:li "Object properties"
-                                              (list-items (object-properties ontology))]
-                                            [:li "Data properties"
-                                              (list-items (data-properties ontology))]
+                                              (list-items (classes *ontology*))]
+                                            [:li [:a {:href "#ObjectProperties"} "Object properties"]
+                                              (list-items (object-properties *ontology*))]
+                                            [:li [:a {:href "#DataProperties"} "Data properties"]
+                                              (list-items (data-properties *ontology*))]
+                                              ;; TODO: Annotation properties, named individuals, etc.
                         ]]
                         [:div {:id "Classes"} [:h2 "Classes"]
-                           (expand-items (classes ontology))
+                           (expand-items (classes *ontology*))
+                        ]
+                        [:div {:id "ObjectProperties"} [:h2 "Object properties"]
+                           (expand-items (object-properties *ontology*))
+                        ]
+                        [:div {:id "DataProperties"} [:h2 "Data properties"]
+                           (expand-items (data-properties *ontology*))
                         ]
 
                         ))))))
