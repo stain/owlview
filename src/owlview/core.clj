@@ -8,6 +8,7 @@
             [clojure.stacktrace :refer [print-stack-trace]]
             [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
                                 owl-manager with-owl-manager prefixes
+                                prefix-for-iri
                                 object-properties data-properties annotation-properties
                                 ranges-of-property annotations]]
             [compojure.core :refer [defroutes ANY]]))
@@ -19,7 +20,7 @@
     false)
 
 ; Map from uri to owl-managers
-(def known-ontologies (atom {}))
+(defonce known-ontologies (atom {}))
 
 (defn owl-manager-for [uri]
   (or (get @known-ontologies uri)
@@ -50,16 +51,10 @@
 
 (def ^:dynamic *ontology* nil)
 
-(defn prefix-for [iri]
- (if-let [prefix (get-in (prefixes *ontology*) (.getNamespace iri))]
-   (str prefix ":") (str (.getNamespace iri))))
-
-;(if (:prefix *options*)
-;  (if (:prefix *options*) (str (:prefix *options*) ":") "")
-;  )
-
 (defn name-for-iri [iri]
-  (str (prefix-for iri) (.getFragment iri)))
+  (if-let [prefix-iri (prefix-for-iri iri *ontology*)]
+    prefix-iri
+    (str iri)))
 
 (defn name-for-named [named]
   (name-for-iri (.getIRI named)))
