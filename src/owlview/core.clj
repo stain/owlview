@@ -6,6 +6,7 @@
             [hiccup.util :refer [escape-html]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.stacktrace :refer [print-stack-trace]]
+            [clojure.set :refer [union]]
             [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
                                 owl-manager with-owl-manager prefixes
                                 prefix-for-iri
@@ -74,10 +75,49 @@
 (defn list-items [items]
   [:ol (map (fn [item] [:li (show-item item)]) (sorted-items items))])
 
+
+(def annotation-uri {
+  "http://www.w3.org/2000/01/rdf-schema#isDefinedBy" :isDefinedBy
+  "http://www.w3.org/2002/07/owl#versionInfo"    :versionInfo
+  "http://purl.org/dc/terms/date"                :date
+  "http://purl.org/dc/elements/1.1/date"         :date
+  "http://www.w3.org/2000/01/rdf-schema#label"   :label
+  "http://purl.org/dc/terms/title"               :title
+  "http://purl.org/dc/elements/1.1/title"        :title
+  "http://www.w3.org/2000/01/rdf-schema#comment" :comment
+  "http://purl.org/dc/terms/description"         :description
+  "http://purl.org/dc/elements/1.1/description"  :description
+  "http://purl.org/dc/elements/1.1/creator"      :creator
+  "http://purl.org/dc/terms/creator"             :creator
+  "http://purl.org/dc/elements/1.1/contributor"  :contributor
+  "http://purl.org/dc/terms/contributor"         :contributor
+  "http://purl.org/dc/terms/rights"              :rights
+  "http://www.w3.org/2000/01/rdf-schema#seeAlso" :seeAlso
+  })
+
+
+(defn annotation-map [item]
+  (merge-with union
+   (map (fn [ann] (hash-map (annotation-uri
+                     (.. ann (getProperty) (getURI))
+                     (name-for-iri (.getProperty ann)))
+                   (sorted-set (.getValue ann))))
+        (annotations item))))
+
+
+(defn expand-item [item]
+  [:div
+    [:h3 {:id (item-id item)} (label-for-item item)]
+    [:dl {:class :dl-horizontal}
+      [:dt "URI"] [:dd (escape-html (.getIRI item))]
+      [:dt "Annotations"]
+      (map (fn [[k,v]] [[:dt (escape-html k)] [:dd (escape-html v)]])
+        (map annotation-map item))
+    ]
+  ])
+
 (defn expand-items [items]
-  [:div (map (fn [item]
-    [:h3 {:id (item-id item)} (label-for-item item)])
-    (sorted-items items))])
+  [:div (map expand-item (sorted-items items))])
 
 
 (defroutes app
