@@ -47,6 +47,23 @@
                                 "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.js")
                   ]]))
 
+(defn label-for-item [item]
+  (escape-html item))
+
+(defn item-id [item]
+  (escape-html (.getIRI item)))
+
+(defn show-item [item]
+  [:a {:href (str "#" (item-id item))} (label-for-item item)])
+
+(defn list-items [items]
+  [:ol (map (fn [item] [:li (show-item item)]) items)])
+
+(defn expand-items [items]
+  [:div (map (fn [item]
+    [:h3 {:id (item-id item)} (label-for-item item)])
+    items)])
+
 (defroutes app
   (ANY "/" [] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
@@ -78,20 +95,21 @@
     :handle-ok (fn [ctx]
         (with-owl
           (let [ontology (get-ontology url)]
-            (html ctx (str "Ontology " (escape-html url)) [:div "OK that is: " (escape-html ontology)
-                                            [:h2 "Classes"]
-                                            [:ul
-                                              (map (fn [x] [:li (escape-html x)]) (classes ontology)
-                                              )]
-                                            [:h2 "Object properties"]
-                                            [:ul
-                                              (map (fn [x] [:li (escape-html x)]) (object-properties ontology)
-                                              )]
-                                            [:h2 "Data properties"]
-                                            [:ul
-                                              (map (fn [x] [:li (escape-html x)]) (data-properties ontology)
-                                              )]
-        ]))))))
+            (html ctx (str "Ontology " (escape-html url))
+                        ;[:div "Ontology: " (escape-html ontology)]
+                        [:div [:h2 "Content"] [:ol
+                                            [:li [:a {:href "#Classes"} "Classes"]
+                                              (list-items (classes ontology))]
+                                            [:li "Object properties"
+                                              (list-items (object-properties ontology))]
+                                            [:li "Data properties"
+                                              (list-items (data-properties ontology))]
+                        ]]
+                        [:div {:id "Classes"} [:h2 "Classes"]
+                           (expand-items (classes ontology))
+                        ]
+
+                        ))))))
 )
 
 
