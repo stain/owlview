@@ -2,6 +2,7 @@
   (:require [liberator.core :refer [resource defresource]]
             [liberator.dev :refer [wrap-trace]]
             [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [hiccup.page :refer [html5 include-css include-js]]
             [hiccup.util :refer [escape-html]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -173,4 +174,6 @@
 
 (def handler
   (-> app
-      (wrap-params)))
+      (wrap-params)
+      (wrap-multipart-params)
+      ))
