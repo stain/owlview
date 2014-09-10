@@ -120,13 +120,14 @@
           [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
       ))
       :handle-created (fn [ctx]
+          (println ctx)
           (let [uri (ctx :location)]
                 (html ctx "Loaded ontology"
                                 [:div {:class :jumbotron}
                                   "Loaded ontology: "
                                   [:a {:href uri} uri]
                                 ]
-                                ;[:script {:typ}]
+                                [:script {:type "text/javascript"} (format "document.location='%s';" uri)]
                                 )))
       :post! (fn [{ {multipart :multipart-params
                     params :params
