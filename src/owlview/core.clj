@@ -87,10 +87,10 @@
                         :handle-ok (fn [ctx] (html ctx "owlview"
                               [:div {:class "jumbotron"}
                                   "Visualize an OWL/RDFS ontology:"
-                                  [:form {:role "form" :method "POST" :action "ont"}
+                                  [:form {:role "form" :method "POST" :action "ont" :enctype "multipart/form-data"}
                                      [:p [:input {:name "url" :type "url" :class "form-control" :placeholder "http://purl.org/pav/" :autofocus :autofocus}]]
                                      "or:"
-                                     [:p [:input {:name "file" :type "file" :class "form-control"
+                                     [:p [:input {:name "file" :type "file" :class "form-control" :multiple "multiple"
                                                     :accept "application/rdf+xml,text/turtle,application/owl+xml,.owl,.rdf,.ttl,.owx"}]]
                                      [:p [:input {:type "submit" :class "btn btn-primary btn-lg" :value "Visualize"}]]
                                   ]
@@ -112,14 +112,18 @@
                 (sort (keys @known-ontologies)))]
           [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
       ))
-      :post! (fn [{ {params :params :as request}
+      :post! (fn [{ {multipart :multipart-params
+                    params :params
+                    :as request}
                     :request :as ctx}]
+                (println multipart)
                 (println params)
-                (if-let [file (get params "file")]
-                  (let [body (request :body)]
-                    (println body)))
-                ; else.. do the url thing
-                ctx
+                (if-let [url (params "url")])
+                  { :location (format "/ont/%s" url) }
+                  ;; tODO: Check for empty string
+                (if-let [file (params "file")]
+                ;; TODO: Check for empty file
+                  { :location (format "/ont/%s" 127812) }
                 )
 
       ;;
@@ -136,7 +140,7 @@
 ;              :representation {:encoding identity, :media-type application/xhtml+xml}}
       ;;
 
-      :post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
+      ;:post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
     ))
   (ANY "/ont/*" [& {url :* }] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
