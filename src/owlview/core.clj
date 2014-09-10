@@ -1,4 +1,5 @@
 (ns owlview.core
+  (:import [java.util UUID])
   (:require [liberator.core :refer [resource defresource]]
             [liberator.dev :refer [wrap-trace]]
             [ring.middleware.params :refer [wrap-params]]
@@ -97,7 +98,7 @@
                                                     :accept "application/rdf+xml,text/turtle,application/owl+xml,.owl,.rdf,.ttl,.owx"}]]
                                      [:p [:input {:type "submit" :class "btn btn-primary btn-lg" :value "Visualize"}]]
                                   ]
-                              [:p "Alternatively, view any of the " [:a {:href "ont"} "known ontologies" ] "."]
+                                  [:p "Alternatively, view any of the " [:a {:href "ont"} "known ontologies" ] "."]
                               ]
                           ))))
   (ANY "/ont" [] (resource
@@ -121,30 +122,19 @@
                     :request :as ctx}]
                 (println multipart)
                 (println params)
-                (if-let [url (params "url")])
-                  { :location (format "/ont/%s" url) }
-                  ;; tODO: Check for empty string
-                (if-let [file (params "file")]
-                ;; TODO: Check for empty file
-                  { :location (format "/ont/%s" 127812) }
-                )
+                (let [url (params "url")
+                      files (params "file")]
+                    (if (and url (not (.isEmpty url)))
+                      { :location (format "/ont/%s" url) }
+                      (let [uuid (str (UUID/randomUUID))]
+                        (with-owl-manager (owl-manager-for uuid)
+                          (doall (map
+                            #(load-ontology (get % :tmpfile))
+                            files)))
+                        { :location (format "/ont/%s" uuid) }
+                      )))))
+  )
 
-      ;;
-;   {:request {:ssl-client-cert nil, :remote-addr 127.0.0.1, :params {file pav.owl, url }, :route-params {},
-;     :headers {host localhost:3000, user-agent Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0, content-type application/x-www-form-urlencoded, content-length 17,
-;       referer http://localhost:3000/, connection keep-alive, accept text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8, accept-language en-gb,en;q=0.5, accept-encoding gzip, deflate, cache-control max-age=0},
-;       :server-port 3000, :content-length 17, :form-params {file pav.owl, url }, :query-params {}, :content-type application/x-www-form-urlencoded, :character-encoding nil,
-;          :uri /ont, :server-name localhost, :query-string nil,
-;         :body #<HttpInput org.eclipse.jetty.server.HttpInput@469c3554>, :scheme :http,
-;
-;          :request-method :post},
-;          :resource {:existed? #<core$constantly$fn__4085 clojure.core$constantly$fn__4085@22a41ee1>, :conflict? #<core$constantly$fn__4085 clojure.core$constantly$fn__4085@44e7578b>,
-;           ;; ;;;...
-;              :representation {:encoding identity, :media-type application/xhtml+xml}}
-      ;;
-
-      ;:post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
-    ))
   (ANY "/ont/*" [& {url :* }] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
     :handle-exception (fn [{err :exception :as ctx}]
@@ -176,7 +166,8 @@
                            (expand-items (data-properties *ontology*))
                         ]
 
-                        ))))))
+                        )))))
+  )
 )
 
 
@@ -184,4 +175,4 @@
   (-> app
       (wrap-params)
       (wrap-multipart-params)
-      ))
+  ))
