@@ -1,7 +1,9 @@
 (ns owlview.core
+  (:import [java.util UUID])
   (:require [liberator.core :refer [resource defresource]]
             [liberator.dev :refer [wrap-trace]]
             [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [hiccup.page :refer [html5 include-css include-js]]
             [hiccup.util :refer [escape-html]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -27,8 +29,12 @@
   (or (get @known-ontologies uri)
       (get (swap! known-ontologies assoc uri (owl-manager)) uri)))
 
+(defn forget-owl-manager-for [uri]
+  (swap! known-ontologies dissoc uri))
+
 (defn get-ontology [uri]
-  (load-ontology uri))
+  (or (first (loaded-ontologies))
+      (load-ontology uri)))
 
 (defn html [ctx title & body]
               (html5 {:xml? (xhtml? ctx)}
@@ -52,6 +58,8 @@
 
 (def ^:dynamic *ontology* nil)
 
+(def example-ontology "http://purl.org/pav/")
+
 (defn name-for-iri [iri]
   (if-let [prefix-iri (prefix-for-iri iri *ontology*)]
     prefix-iri
@@ -74,7 +82,6 @@
 
 (defn list-items [items]
   [:ol (map (fn [item] [:li (show-item item)]) (sorted-items items))])
-
 
 (def annotation-uri {
   "http://www.w3.org/2000/01/rdf-schema#isDefinedBy" :isDefinedBy
@@ -116,9 +123,11 @@
     ]
   ])
 
+(defn wrap-map [s]
+  (if (map? s) [s] s))
+
 (defn expand-items [items]
   [:div (map expand-item (sorted-items items))])
-
 
 (defroutes app
   (ANY "/" [] (resource
@@ -126,33 +135,76 @@
                         :handle-ok (fn [ctx] (html ctx "owlview"
                               [:div {:class "jumbotron"}
                                   "Visualize an OWL/RDFS ontology:"
-                                  [:form {:role "form" :method "POST" :action "ont"}
-                                     [:p [:input {:name "url" :type "url" :class "form-control" :placeholder "http://purl.org/pav/" :autofocus :autofocus}]]
+                                  [:form {:role "form" :method "POST" :action "ont" :enctype "multipart/form-data"}
+                                     [:p [:input {:name "url" :type "url" :class "form-control" :placeholder example-ontology :autofocus :autofocus}]]
                                      "or:"
-                                     [:p [:input {:name "file" :type "file" :class "form-control"
+                                     [:p [:input {:name "file" :type "file" :class "form-control" :multiple "multiple"
                                                     :accept "application/rdf+xml,text/turtle,application/owl+xml,.owl,.rdf,.ttl,.owx"}]]
                                      [:p [:input {:type "submit" :class "btn btn-primary btn-lg" :value "Visualize"}]]
                                   ]
+                                  [:p "Alternatively, view any of the " [:a {:href "ont"} "known ontologies" ] "."]
                               ]
                           ))))
   (ANY "/ont" [] (resource
       :available-media-types ["text/html" "application/xhtml+xml"]
       :allowed-methods [:post :get]
-      :handle-ok (fn [ctx] (html ctx "owlview: Known ontologies" ["Known:" (keys @known-ontologies) "OK?"]))
-      :post! (fn [ctx] (str "OK. " ctx))
-      :post-redirect? (fn [ctx] {:location (format "/ont/%s" "http://purl.org/pav/")})
-    ))
-  (ANY "/ont/*" [& {url :*}] (resource
+      :handle-exception (fn [{err :exception :as ctx}]
+        (print-stack-trace err)
+        (html ctx "Failed to load ontology" [:pre (escape-html (or (.getMessage err) (str err)))])
+      )
+      :handle-ok (fn [ctx] (html ctx "owlview: Known ontologies"
+        [:div {:class :jumbotron}
+          [:p "Namespaces:"]
+          [:ul (map
+                #(vector :li [:a {:href (str "ont/" (escape-html %))}  (escape-html %)])
+                (filter #(.contains % ":") (sort (keys @known-ontologies))))]
+          [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
+      ))
+      :handle-created (fn [ctx]
+          (println ctx)
+          (let [uri (ctx :location)]
+                (html ctx "Loaded ontology"
+                                [:div {:class :jumbotron}
+                                  "Loaded ontology: "
+                                  [:a {:href uri} uri]
+                                ]
+                                [:script {:type "text/javascript"} (format "document.location='%s';" uri)]
+                                )))
+      :post! (fn [{ {multipart :multipart-params
+                    params :params
+                    :as request}
+                    :request :as ctx}]
+                (println params)
+                (let [url (params "url")
+                      files (params "file")]
+                      (println files)
+                      (println (first files))
+                    (if (and url (not (.isEmpty url)))
+                      { :location (format "/ont/%s" url) }
+                      (if (= 0 (get files :size)) ; no file uploaded - use example
+                        {:location (format "/ont/%s" example-ontology)}
+                        (let [uuid (str (UUID/randomUUID))]
+                          (println uuid)
+                          (with-owl-manager (owl-manager-for uuid)
+                            (doall (map
+                              #(load-ontology (get % :tempfile))
+                              (wrap-map files))))
+                            { :location (format "/ont/%s" uuid)}
+                        )))))
+  ))
+
+  (ANY "/ont/*" [& {url :* }] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
     :handle-exception (fn [{err :exception :as ctx}]
       (print-stack-trace err)
-      (html ctx (str "Failed to load ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
+      (forget-owl-manager-for url) ; force reload and unlisting
+      (html ctx (str "Failed to ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
     )
     :handle-ok (fn [ctx]
         (with-owl-manager (owl-manager-for url)
           (binding [*ontology* (get-ontology url)]
             (html ctx (str "Ontology " (escape-html url))
-                        ;[:div "Ontology: " (escape-html *ontology*)]
+                       ;[:div "Ontology: " (escape-html *ontology*)]
                         [:div [:h2 "Content"] [:ol
                                             [:li [:a {:href "#Classes"} "Classes"]
                                               (list-items (classes *ontology*))]
@@ -172,10 +224,13 @@
                            (expand-items (data-properties *ontology*))
                         ]
 
-                        ))))))
+                        )))))
+  )
 )
 
 
 (def handler
   (-> app
-      (wrap-params)))
+      (wrap-params)
+      (wrap-multipart-params)
+  ))
