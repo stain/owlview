@@ -27,6 +27,9 @@
   (or (get @known-ontologies uri)
       (get (swap! known-ontologies assoc uri (owl-manager)) uri)))
 
+(defn forget-owl-manager-for [uri]
+  (swap! known-ontologies dissoc uri))
+
 (defn get-ontology [uri]
   (load-ontology uri))
 
@@ -109,7 +112,7 @@
           [:p "Namespaces:"]
           [:ul (map
                 #(vector :li [:a {:href (str "ont/" (escape-html %))}  (escape-html %)])
-                (sort (keys @known-ontologies)))]
+                (filter #(.contains % ":") (sort (keys @known-ontologies))))]
           [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
       ))
       :post! (fn [{ {multipart :multipart-params
@@ -146,6 +149,7 @@
     :available-media-types ["text/html" "application/xhtml+xml"]
     :handle-exception (fn [{err :exception :as ctx}]
       (print-stack-trace err)
+      (forget-owl-manager-for url) ; force reload and unlisting
       (html ctx (str "Failed to load ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
     )
     :handle-ok (fn [ctx]
