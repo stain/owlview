@@ -32,7 +32,8 @@
   (swap! known-ontologies dissoc uri))
 
 (defn get-ontology [uri]
-  (load-ontology uri))
+  (or (first (loaded-ontologies))
+      (load-ontology uri)))
 
 (defn html [ctx title & body]
               (html5 {:xml? (xhtml? ctx)}
@@ -79,11 +80,13 @@
 (defn list-items [items]
   [:ol (map (fn [item] [:li (show-item item)]) (sorted-items items))])
 
+(defn ensure-seq [s]
+  (if (seq? s) s [s]))
+
 (defn expand-items [items]
   [:div (map (fn [item]
     [:h3 {:id (item-id item)} (label-for-item item)])
     (sorted-items items))])
-
 
 (defroutes app
   (ANY "/" [] (resource
@@ -106,7 +109,7 @@
       :allowed-methods [:post :get]
       :handle-exception (fn [{err :exception :as ctx}]
         (print-stack-trace err)
-        (html ctx (str "Failed to load ontology") [:pre (escape-html (or (.getMessage err) (str err)))])
+        (html ctx "Failed to load ontology" [:pre (escape-html (or (.getMessage err) (str err)))])
       )
       :handle-ok (fn [ctx] (html ctx "owlview: Known ontologies"
         [:div {:class :jumbotron}
@@ -116,31 +119,42 @@
                 (filter #(.contains % ":") (sort (keys @known-ontologies))))]
           [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
       ))
+      :handle-created (fn [ctx]
+          (let [uri (ctx :location)]
+                (html ctx "Loaded ontology"
+                                [:div {:class :jumbotron}
+                                  "Loaded ontology: "
+                                  [:a {:href uri} uri]
+                                ]
+                                ;[:script {:typ}]
+                                )))
       :post! (fn [{ {multipart :multipart-params
                     params :params
                     :as request}
                     :request :as ctx}]
-                (println multipart)
                 (println params)
                 (let [url (params "url")
                       files (params "file")]
+                      (println files)
+                      (println (first files))
                     (if (and url (not (.isEmpty url)))
                       { :location (format "/ont/%s" url) }
                       (let [uuid (str (UUID/randomUUID))]
+                        (println uuid)
                         (with-owl-manager (owl-manager-for uuid)
                           (doall (map
-                            #(load-ontology (get % :tmpfile))
-                            files)))
-                        { :location (format "/ont/%s" uuid) }
-                      )))))
-  )
+                            #(load-ontology (get % :tempfile))
+                            (ensure-seq files))))
+                          { :location (format "/ont/%s" uuid)}
+                      ))))
+  ))
 
   (ANY "/ont/*" [& {url :* }] (resource
     :available-media-types ["text/html" "application/xhtml+xml"]
     :handle-exception (fn [{err :exception :as ctx}]
       (print-stack-trace err)
       (forget-owl-manager-for url) ; force reload and unlisting
-      (html ctx (str "Failed to load ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
+      (html ctx (str "Failed to ontology " url) [:pre (escape-html (or (.getMessage err) (str err)))])
     )
     :handle-ok (fn [ctx]
         (with-owl-manager (owl-manager-for url)
