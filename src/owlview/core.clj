@@ -82,8 +82,8 @@
 (defn list-items [items]
   [:ol (map (fn [item] [:li (show-item item)]) (sorted-items items))])
 
-(defn ensure-seq [s]
-  (if (seq? s) s [s]))
+(defn wrap-map [s]
+  (if (map? s) [s] s))
 
 (defn expand-items [items]
   [:div (map (fn [item]
@@ -149,7 +149,7 @@
                           (with-owl-manager (owl-manager-for uuid)
                             (doall (map
                               #(load-ontology (get % :tempfile))
-                              (ensure-seq files))))
+                              (wrap-map files))))
                             { :location (format "/ont/%s" uuid)}
                         )))))
   ))
