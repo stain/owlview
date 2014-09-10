@@ -57,6 +57,8 @@
 
 (def ^:dynamic *ontology* nil)
 
+(def example-ontology "http://purl.org/pav/")
+
 (defn name-for-iri [iri]
   (if-let [prefix-iri (prefix-for-iri iri *ontology*)]
     prefix-iri
@@ -95,7 +97,7 @@
                               [:div {:class "jumbotron"}
                                   "Visualize an OWL/RDFS ontology:"
                                   [:form {:role "form" :method "POST" :action "ont" :enctype "multipart/form-data"}
-                                     [:p [:input {:name "url" :type "url" :class "form-control" :placeholder "http://purl.org/pav/" :autofocus :autofocus}]]
+                                     [:p [:input {:name "url" :type "url" :class "form-control" :placeholder example-ontology :autofocus :autofocus}]]
                                      "or:"
                                      [:p [:input {:name "file" :type "file" :class "form-control" :multiple "multiple"
                                                     :accept "application/rdf+xml,text/turtle,application/owl+xml,.owl,.rdf,.ttl,.owx"}]]
@@ -140,14 +142,16 @@
                       (println (first files))
                     (if (and url (not (.isEmpty url)))
                       { :location (format "/ont/%s" url) }
-                      (let [uuid (str (UUID/randomUUID))]
-                        (println uuid)
-                        (with-owl-manager (owl-manager-for uuid)
-                          (doall (map
-                            #(load-ontology (get % :tempfile))
-                            (ensure-seq files))))
-                          { :location (format "/ont/%s" uuid)}
-                      ))))
+                      (if (= 0 (get files :size)) ; no file uploaded - use example
+                        {:location (format "/ont/%s" example-ontology)}
+                        (let [uuid (str (UUID/randomUUID))]
+                          (println uuid)
+                          (with-owl-manager (owl-manager-for uuid)
+                            (doall (map
+                              #(load-ontology (get % :tempfile))
+                              (ensure-seq files))))
+                            { :location (format "/ont/%s" uuid)}
+                        )))))
   ))
 
   (ANY "/ont/*" [& {url :* }] (resource
