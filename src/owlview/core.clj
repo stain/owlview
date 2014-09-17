@@ -124,8 +124,10 @@
     [:h3 {:id (item-id item)} (label-for-item item)]
     [:dl {:class :dl-horizontal}
       [:dt "URI"] [:dd (escape-html (.getIRI item))]
-      [:dt "Annotations"]
-      (map #(vector :dd %) (annotations-for item))
+      (let [annotations (annotations-for item)]
+        (if (not (empty? annotations))  (list
+          [:dt "Annotations"]
+          (map #(vector :dd %) annotations) )))
 ;      (doall (map (fn [[k,v]] [[:dt (escape-html "x")] [:dd (escape-html "f")]])
 ;        (map annotation-map item)))
     ]
