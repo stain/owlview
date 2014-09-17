@@ -22,9 +22,10 @@ The project is still at an early, experimental stage.
  * Options - read from OWL?
  * Content-negotation and download button for different formats (RDF/XML, Turtle, JSON-LD, etc)
  
-## Example
+## Live example
 
-There should be an instance of owlview running at http://owl.s11.no/view/
+There should be an instance of owlview running at http://owl.s11.no/view/ - contact [@soilandreyes](http://twitter.com/soilandreyes) or create a 
+[Github issue](https://github.com/stain/owlview/issues) if you have any problems.
 
 Examples:
  * http://owl.s11.no/view/ont/http://purl.org/pav/
