@@ -7,7 +7,7 @@ Present a simple listing of the classes and properties an OWL ontology, specific
 Inspired by [LODE](http://www.essepuntato.it/lode), the goals of owlview are:
  * Simple (X)HTML 5 results that can be saved and included elsewhere
    * TODO: Indentation?
- * Predictable and [Cool URIs](http://www.w3.org/TR/cooluris)/
+ * Predictable and [Cool URIs](http://www.w3.org/TR/cooluris/)
 
 The project is still at an early, experimental stage.
 
