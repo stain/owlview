@@ -1,5 +1,7 @@
 (ns owlview.core
-  (:import [java.util UUID])
+  (:import [java.util UUID]
+           [org.semanticweb.owlapi.model OWLAnnotationValue IRI OWLLiteral OWLAnonymousIndividual]
+  )
   (:require [liberator.core :refer [resource defresource]]
             [liberator.dev :refer [wrap-trace]]
             [clojure.core.cache :as cache]
@@ -8,6 +10,7 @@
             [hiccup.page :refer [html5 include-css include-js]]
             [hiccup.util :refer [escape-html]]
             [ring.adapter.jetty :refer [run-jetty]]
+            [markdown.core :refer [md-to-html-string]]
             [clojure.stacktrace :refer [print-stack-trace]]
             [clojure.set :refer [union]]
             [owlapi.core :refer [with-owl load-ontology loaded-ontologies classes
@@ -123,9 +126,18 @@
                    (sorted-set (.getValue ann))))
         (annotations item))))
 
+(defn annotation-value [^OWLAnnotationValue v]
+  (cond
+    (instance? IRI v) (let [iri (escape-html v)]
+        [:a {:href iri} iri]
+      )
+    (instance? OWLLiteral v)
+      (md-to-html-string (.getLiteral v) :heading-anchors true)
+    :else (escape-html v)))
+
 (defn annotation [ann]
   (list [:strong (name-for-iri (.. ann (getProperty) (getIRI)))]
-    " " [:span (escape-html (.getValue ann))]))
+    " " [:span (annotation-value (.getValue ann))]))
 
 (defn annotations-for [item]
   (map annotation (annotations item)))
