@@ -6,9 +6,9 @@ Present a simple listing of the classes and properties an OWL ontology, specific
 
 Inspired by [LODE](http://www.essepuntato.it/lode), the goals of owlview are:
  * Simple (X)HTML 5 results that can be saved and included elsewhere
-   * Light-weight Bootstrap 3 styling
-   * TODO: Indentation?
+     * Light-weight [Bootstrap 3](http://getbootstrap.com/) styling
  * Predictable and [Cool URIs](http://www.w3.org/TR/cooluris/)
+ * Render from namespace/URI
 
 The project is still at an early, experimental stage.
 
@@ -22,7 +22,11 @@ The project is still at an early, experimental stage.
  * Ontology metadata
  * Options - read from OWL?
  * Content-negotation and download button for different formats (RDF/XML, Turtle, JSON-LD, etc)
- 
+ * Indentation of HTML source?
+ * Option to not publically list an ontology loaded from URI 
+ * "Follow your nose"-loading of undefined annotation properties and superclasses
+ * Loading directly from an ontology term, e.g. http://owl.s11.no/view/term/http://purl.org/pav/createdOn
+
 ## Live example
 
 There should be an instance of owlview running at http://owl.s11.no/view/ - contact [@soilandreyes](http://twitter.com/soilandreyes) or create a 
