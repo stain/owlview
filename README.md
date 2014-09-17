@@ -11,7 +11,8 @@ Inspired by [LODE](http://www.essepuntato.it/lode), the goals of owlview are:
 
 The project is still at an early, experimental stage.
 
-TODO:
+## TODO
+
  * Menu overlay of Table of Content
  * Better navigation of large ontologies like [schema.org](http://owl.s11.no/view/ont/http://topbraid.org/schema/schema.ttl)
  * Alternative view with page per property
