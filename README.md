@@ -7,8 +7,9 @@ Present a simple listing of the classes and properties an OWL ontology, specific
 Inspired by [LODE](http://www.essepuntato.it/lode), the goals of owlview are:
  * Simple (X)HTML 5 results that can be saved and included elsewhere
      * Light-weight [Bootstrap 3](http://getbootstrap.com/) styling
- * Predictable and [Cool URIs](http://www.w3.org/TR/cooluris/) pr ontology/term
+ * Predictable and [Cool URIs](http://www.w3.org/TR/cooluris/) for ontology/term
  * Load from ontology URL or uploaded file(s)
+ * Markdown support
 
 The project is still at an early, experimental stage.
 
@@ -18,8 +19,7 @@ The project is still at an early, experimental stage.
  * Better navigation of large ontologies like [schema.org](http://owl.s11.no/view/ont/http://topbraid.org/schema/schema.ttl)
  * Alternative view with page per property
  * Nicer rendering of annotations
-   * Markdown (optional)
- * Ontology metadata
+ * Auto-detect Markdown vs HTML? Optional?
  * Options - read from OWL?
  * Content-negotation and download button for different formats (RDF/XML, Turtle, JSON-LD, etc)
  * Indentation of HTML source?
