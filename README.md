@@ -40,8 +40,19 @@ Examples:
 
 ## Usage
 
-Requires [Clojure](http://clojure.org/) and [Leiningen](http://leiningen.org/): 
+Requires [Clojure](http://clojure.org/) and [Leiningen](http://leiningen.org/).
 
+(For now) install SNAPSHOT of [clj-owlapi](https://github.com/stain/clj-owlapi):
+    
+    git clone https://github.com/stain/clj-owlapi.git
+    cd clj-owlapi
+    lein install
+    cd ..
+
+Then, for owlview:
+
+    git clone https://github.com/stain/owlview.git
+    cd owlview
     lein ring server
 
 ## License
