@@ -190,16 +190,16 @@
                       (println files)
                       (println (first files))
                     (if (and url (not (.isEmpty url)))
-                      { :location (format "/ont/%s" url) }
+                      { :location (format "ont/%s" url) }
                       (if (= 0 (get files :size)) ; no file uploaded - use example
-                        {:location (format "/ont/%s" example-ontology)}
+                        {:location (format "ont/%s" example-ontology)}
                         (let [uuid (str (UUID/randomUUID))]
                           (println uuid)
                           (with-owl-manager (owl-manager-for uuid)
                             (doall (map
                               #(load-ontology (get % :tempfile))
                               (wrap-map files))))
-                            { :location (format "/ont/%s" uuid)}
+                            { :location (format "ont/%s" uuid)}
                         )))))
   ))
 
