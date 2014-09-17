@@ -2,6 +2,7 @@
   (:import [java.util UUID])
   (:require [liberator.core :refer [resource defresource]]
             [liberator.dev :refer [wrap-trace]]
+            [clojure.core.cache :as cache]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [hiccup.page :refer [html5 include-css include-js]]
@@ -23,14 +24,25 @@
     false)
 
 ; Map from uri to owl-managers
-(defonce known-ontologies (atom {}))
+;(defonce known-ontologies (atom {}))
+
+(def cache (cache/soft-cache-factory {}))
 
 (defn owl-manager-for [uri]
-  (or (get @known-ontologies uri)
-      (get (swap! known-ontologies assoc uri (owl-manager)) uri)))
+  (if (cache/has? cache uri)
+    (cache/lookup cache uri)
+    (let [m (owl-manager)]
+      (cache/miss cache uri m)
+      m)))
+;  (or (get @known-ontologies uri) ; TODO: Use SoftReference
+;      (get (swap! known-ontologies assoc uri (owl-manager)) uri)))
 
 (defn forget-owl-manager-for [uri]
-  (swap! known-ontologies dissoc uri))
+  (cache/evict cache uri))
+  ;(swap! known-ontologies dissoc uri))
+
+(defn known-ontologies []
+  (keys cache))
 
 (defn get-ontology [uri]
   (or (first (loaded-ontologies))
@@ -167,7 +179,7 @@
           [:p "Namespaces:"]
           [:ul (map
                 #(vector :li [:a {:href (str "ont/" (escape-html %))}  (escape-html %)])
-                (filter #(.contains % ":") (sort (keys @known-ontologies))))]
+                (filter #(.contains % ":") (sort (known-ontologies))))]
           [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
       ))
       :handle-created (fn [ctx]
