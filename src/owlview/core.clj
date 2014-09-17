@@ -135,7 +135,8 @@
   [:div
     [:h3 {:id (item-id item)} (label-for-item item)]
     [:dl {:class :dl-horizontal}
-      [:dt "URI"] [:dd (escape-html (.getIRI item))]
+      (let [uri (escape-html (.getIRI item))]
+        (list [:dt "URI"] [:dd [:a {:href uri} uri]]))
       (let [annotations (annotations-for item)]
         (if (not (empty? annotations))  (list
           [:dt "Annotations"]
