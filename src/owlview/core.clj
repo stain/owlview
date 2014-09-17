@@ -1,6 +1,7 @@
 (ns owlview.core
   (:import [java.util UUID]
-           [org.semanticweb.owlapi.model OWLAnnotationValue IRI OWLLiteral OWLAnonymousIndividual]
+           [org.semanticweb.owlapi.model
+             OWLAnnotationValue IRI OWLLiteral OWLNamedObject OWLAnonymousIndividual]
   )
   (:require [liberator.core :refer [resource defresource]]
             [liberator.dev :refer [wrap-trace]]
@@ -140,7 +141,10 @@
     " " [:span (annotation-value (.getValue ann))]))
 
 (defn annotations-for [item]
-  (map annotation (annotations item)))
+  (let [annotations (map annotation (annotations item))]
+    (if (not (empty? annotations))  (list
+      [:dt "Annotations"]
+      (map #(vector :dd %) annotations) ))))
 
 (defn expand-item [item]
   ;(doall (map annotation-map item))
@@ -149,10 +153,9 @@
     [:dl {:class :dl-horizontal}
       (let [uri (escape-html (.getIRI item))]
         (list [:dt "URI"] [:dd [:a {:href uri} uri]]))
-      (let [annotations (annotations-for item)]
-        (if (not (empty? annotations))  (list
-          [:dt "Annotations"]
-          (map #(vector :dd %) annotations) )))
+      ;(if (instance? ))
+      (annotations-for item)
+
 ;      (doall (map (fn [[k,v]] [[:dt (escape-html "x")] [:dd (escape-html "f")]])
 ;        (map annotation-map item)))
     ]
@@ -196,7 +199,7 @@
           [:p "Alternatively, try to " [:a {:href "."} "visualize another ontology" ] "."]]
       ))
       :handle-created (fn [ctx]
-          (println ctx)
+          ;(println ctx)
           (let [uri (ctx :location)]
                 (html ctx "Loaded ontology"
                                 [:div {:class :jumbotron}
@@ -209,11 +212,9 @@
                     params :params
                     :as request}
                     :request :as ctx}]
-                (println params)
+                ;(println params)
                 (let [url (params "url")
                       files (params "file")]
-                      (println files)
-                      (println (first files))
                     (if (and url (not (.isEmpty url)))
                       { :location (format "ont/%s" url) }
                       (if (= 0 (get files :size)) ; no file uploaded - use example
@@ -241,6 +242,7 @@
             (html ctx (str "Ontology " (escape-html url))
                        ;[:div "Ontology: " (escape-html *ontology*)]
                         [:div [:h2 "Content"] [:ol
+                                            [:li [:a {:href "#Ontology"} "Ontology"]]
                                             [:li [:a {:href "#Classes"} "Classes"]
                                               (list-items (classes *ontology*))]
                                             [:li [:a {:href "#ObjectProperties"} "Object properties"]
@@ -249,6 +251,9 @@
                                               (list-items (data-properties *ontology*))]
                                               ;; TODO: Annotation properties, named individuals, etc.
                         ]]
+                        [:div {:id "Ontology"} [:h2 "Ontology"]
+                          (annotations-for *ontology*)
+                        ]
                         [:div {:id "Classes"} [:h2 "Classes"]
                            (expand-items (classes *ontology*))
                         ]
