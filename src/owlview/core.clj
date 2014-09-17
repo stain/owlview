@@ -106,20 +106,28 @@
 (defn annotation-map [item]
   (merge-with union
    (map (fn [ann] (hash-map (annotation-uri
-                     (.. ann (getProperty) (getURI))
+                     (.. ann (getProperty) (getIRI))
                      (name-for-iri (.getProperty ann)))
                    (sorted-set (.getValue ann))))
         (annotations item))))
 
+(defn annotation [ann]
+  (list [:strong (name-for-iri (.. ann (getProperty) (getIRI)))]
+    " " [:span (escape-html (.getValue ann))]))
+
+(defn annotations-for [item]
+  (map annotation (annotations item)))
 
 (defn expand-item [item]
+  ;(doall (map annotation-map item))
   [:div
     [:h3 {:id (item-id item)} (label-for-item item)]
     [:dl {:class :dl-horizontal}
       [:dt "URI"] [:dd (escape-html (.getIRI item))]
       [:dt "Annotations"]
-      (map (fn [[k,v]] [[:dt (escape-html k)] [:dd (escape-html v)]])
-        (map annotation-map item))
+      (map #(vector :dd %) (annotations-for item))
+;      (doall (map (fn [[k,v]] [[:dt (escape-html "x")] [:dd (escape-html "f")]])
+;        (map annotation-map item)))
     ]
   ])
 
