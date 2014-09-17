@@ -8,7 +8,7 @@ Inspired by [LODE](http://www.essepuntato.it/lode), the goals of owlview are:
  * Simple (X)HTML 5 results that can be saved and included elsewhere
      * Light-weight [Bootstrap 3](http://getbootstrap.com/) styling
  * Predictable and [Cool URIs](http://www.w3.org/TR/cooluris/)
- * Render from namespace/URI
+ * Load from ontology URL or uploaded file(s)
 
 The project is still at an early, experimental stage.
 
