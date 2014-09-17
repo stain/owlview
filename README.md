@@ -26,6 +26,7 @@ The project is still at an early, experimental stage.
  * Option to not publically list an ontology loaded from URI 
  * "Follow your nose"-loading of undefined annotation properties and superclasses
  * Loading directly from an ontology term, e.g. http://owl.s11.no/view/term/http://purl.org/pav/createdOn
+ * [respec.js](https://github.com/darobin/respec/) support
 
 ## Live example
 
