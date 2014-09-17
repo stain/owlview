@@ -13,9 +13,9 @@ Inspired by [LODE](http://www.essepuntato.it/lode), the goals of owlview are:
 There should be an instance of owlview running at http://owl.s11.no/view/
 
 Examples:
- * http://owl.s11.no/view/http://purl.org/pav/
- * http://owl.s11.no/view/http://purl.org/dc/terms/
- * http://owl.s11.no/view/http://www.w3.org/ns/prov-o#
+ * http://owl.s11.no/view/ont/http://purl.org/pav/
+ * http://owl.s11.no/view/ont/http://purl.org/dc/terms/
+ * http://owl.s11.no/view/ont/http://www.w3.org/ns/prov-o#
 
 
 ## Usage
