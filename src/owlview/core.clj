@@ -22,10 +22,8 @@
             [compojure.core :refer [defroutes ANY]]))
 
 (defn xhtml? [ctx]
-;  (= "application/xhtml+xml";
-;     (print
-;    (get-in ctx [:representation :media-type]))
-    false)
+  (= "application/xhtml+xml";
+    (get-in ctx [:representation :media-type])))
 
 ; Map from uri to owl-managers
 ;(defonce known-ontologies (atom {}))
@@ -53,8 +51,7 @@
       (load-ontology uri)))
 
 (defn html [ctx title & body]
-              (html5 {:xml? (xhtml? ctx)}
-                  [:head
+              (html5 {:xml? false} [:head
                     [:title (escape-html title)]
                     (include-css "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.css"
                       "//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.css"
@@ -133,6 +130,7 @@
         [:a {:href iri} iri]
       )
     (instance? OWLLiteral v)
+    ; TODO: Check first character for <html tags? :)
       (md-to-html-string (.getLiteral v) :heading-anchors true)
     :else (escape-html v)))
 
@@ -169,7 +167,8 @@
 
 (defroutes app
   (ANY "/" [] (resource
-    :available-media-types ["text/html" "application/xhtml+xml"]
+    ;:available-media-types ["text/html" "application/xhtml+xml"]
+    :available-media-types ["text/html"]
                         :handle-ok (fn [ctx] (html ctx "owlview"
                               [:div {:class "jumbotron"}
                                   "Visualize an OWL/RDFS ontology:"
@@ -184,7 +183,8 @@
                               ]
                           ))))
   (ANY "/ont" [] (resource
-      :available-media-types ["text/html" "application/xhtml+xml"]
+      ;':available-media-types ["text/html" "application/xhtml+xml"]
+      :available-media-types ["text/html"]
       :allowed-methods [:post :get]
       :handle-exception (fn [{err :exception :as ctx}]
         (print-stack-trace err)
@@ -230,7 +230,8 @@
   ))
 
   (ANY "/ont/*" [& {url :* }] (resource
-    :available-media-types ["text/html" "application/xhtml+xml"]
+    ;:available-media-types ["text/html" "application/xhtml+xml"]
+    :available-media-types ["text/html"]
     :handle-exception (fn [{err :exception :as ctx}]
       (print-stack-trace err)
       (forget-owl-manager-for url) ; force reload and unlisting
